@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceDot } from 'recharts'
 
 function App() {
@@ -26,6 +26,16 @@ function App() {
   const [percReforma, setPercReforma] = useState(7)
 
   const [resultado, setResultado] = useState(null)
+
+  useEffect(() => {
+    const handler = () => {
+      if (document.activeElement?.type === 'number') {
+        document.activeElement.blur()
+      }
+    }
+    document.addEventListener('wheel', handler, { passive: true })
+    return () => document.removeEventListener('wheel', handler)
+  }, [])
 
   const calcular = () => {
     // Validações
