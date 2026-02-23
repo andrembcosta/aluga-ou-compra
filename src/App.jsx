@@ -3,7 +3,9 @@ import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 
 function App() {
   const [valorImovel, setValorImovel] = useState(500000)
-  const [taxaJuros, setTaxaJuros] = useState(10)
+  const [taxaJuros, setTaxaJuros] = useState(9)
+  const [taxaTR, setTaxaTR] = useState(2)
+  const [jurosCustom, setJurosCustom] = useState(false)
   const [percEntrada, setPercEntrada] = useState(20)
   const [numParcelas, setNumParcelas] = useState(360)
   const [inflacao, setInflacao] = useState(4)
@@ -30,6 +32,7 @@ function App() {
     const valorEntrada = (percEntrada / 100) * valorImovel
     const valorFinanciado = valorImovel - valorEntrada
     const taxaMensal = taxaJuros / 100 / 12
+    const taxaTRMensal = Math.pow(1 + taxaTR / 100, 1 / 12) - 1
     const taxaInflacaoMensal = inflacao / 100 / 12
     const taxaInvestimentoMensal = (inflacao + taxaInvestimento) / 100 / 12
 
@@ -39,6 +42,7 @@ function App() {
       valorEntrada,
       valorFinanciado,
       taxaMensal,
+      taxaTRMensal,
       numParcelas,
       saldoFGTS,
       depositoFGTS,
@@ -106,6 +110,7 @@ function App() {
     valorEntrada,
     valorFinanciado,
     taxaMensal,
+    taxaTRMensal,
     numParcelas,
     saldoFGTSInicial,
     depositoFGTS,
@@ -165,6 +170,10 @@ function App() {
     let dadosGrafico = []
     let aluguelAtual = valorAluguel
 
+    // Pré-calcular parcela base do Price (sem TR) — a TR é somada mensalmente sobre o saldo
+    const parcelaBasePrice = valorFinanciado * (taxaMensal * Math.pow(1 + taxaMensal, numParcelas)) /
+      (Math.pow(1 + taxaMensal, numParcelas) - 1)
+
     // Simular mês a mês
     for (let mes = 1; mes <= numParcelas; mes++) {
       if (saldoDevedor <= 0) break
@@ -174,13 +183,14 @@ function App() {
       let amortizacao
       let parcela
 
+      const correcaoTR = saldoDevedor * taxaTRMensal
+
       if (tipoAmortizacao === 'SAC') {
         amortizacao = valorFinanciado / numParcelas
-        parcela = amortizacao + juros
+        parcela = amortizacao + juros + correcaoTR
       } else { // Price
-        parcela = valorFinanciado * (taxaMensal * Math.pow(1 + taxaMensal, numParcelas)) /
-                  (Math.pow(1 + taxaMensal, numParcelas) - 1)
-        amortizacao = parcela - juros
+        amortizacao = parcelaBasePrice - juros
+        parcela = parcelaBasePrice + correcaoTR
       }
 
       // Recebe depósito mensal do FGTS em ambos cenários
@@ -298,8 +308,8 @@ function App() {
       saldoInvestimento_C1 *= (1 + taxaInvestimentoMensal)
       saldoInvestimento_C2 *= (1 + taxaInvestimentoMensal)
 
-      // Atualizar saldo devedor
-      saldoDevedor -= amortizacao
+      // Atualizar saldo devedor: aplica correção TR e desconta amortização
+      saldoDevedor = saldoDevedor * (1 + taxaTRMensal) - amortizacao
       if (saldoDevedor < 0) saldoDevedor = 0
     }
 
@@ -373,13 +383,49 @@ function App() {
         </div>
 
         <div className="form-group">
-          <label>Taxa de Juros Anual</label>
-          <select value={taxaJuros} onChange={(e) => setTaxaJuros(Number(e.target.value))}>
-            <option value={9}>9% ao ano</option>
-            <option value={10.26}>10,26% ao ano</option>
-            <option value={11}>11% ao ano</option>
-            <option value={12}>12% ao ano</option>
+          <label>Taxa de Juros Nominal (a.a.) + TR</label>
+          <select
+            value={jurosCustom ? 'custom' : taxaJuros}
+            onChange={(e) => {
+              if (e.target.value === 'custom') {
+                setJurosCustom(true)
+              } else {
+                setJurosCustom(false)
+                setTaxaJuros(Number(e.target.value))
+              }
+            }}
+          >
+            <option value={9}>9% + TR (Pró-Cotista FGTS)</option>
+            <option value={10.26}>10,26% + TR (SFH Correntista Caixa)</option>
+            <option value={11.75}>11,75% + TR (SFH Bancos Privados)</option>
+            <option value="custom">Personalizado</option>
           </select>
+          {jurosCustom && (
+            <input
+              type="number"
+              value={taxaJuros}
+              onChange={(e) => setTaxaJuros(Number(e.target.value))}
+              step="0.01"
+              min="0"
+              max="30"
+              placeholder="Taxa % ao ano"
+              style={{ marginTop: '8px' }}
+            />
+          )}
+          <small>Taxa nominal conforme contrato. A TR é cobrada separadamente sobre o saldo devedor.</small>
+        </div>
+
+        <div className="form-group">
+          <label>TR Projetada (% ao ano)</label>
+          <input
+            type="number"
+            value={taxaTR}
+            onChange={(e) => setTaxaTR(Number(e.target.value))}
+            step="0.1"
+            min="0"
+            max="10"
+          />
+          <small>TR atual (12 meses): ~2% a.a. A TR é variável e imprevisível — ajuste conforme seu cenário. Use 0% para ver o piso sem correção.</small>
         </div>
 
         <div className="form-group">
