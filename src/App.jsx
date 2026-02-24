@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceDot } from 'recharts'
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 function App() {
   const [valorImovel, setValorImovel] = useState(500000)
@@ -186,7 +186,7 @@ function App() {
 
     // Simular mês a mês
     for (let mes = 1; mes <= numParcelas; mes++) {
-      if (saldoDevedor <= 0) break
+      if (saldoDevedor <= 0 && valorFinanciado > 0) break
 
       // ========== CALCULAR PARCELA DO CENÁRIO 2 ==========
       let juros = saldoDevedor * taxaMensal
@@ -724,7 +724,7 @@ function App() {
                   tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`}
                 />
                 <Tooltip
-                  formatter={(value, name, props) => {
+                  formatter={(value, name) => {
                     const formatarMoeda = (val) => {
                       return new Intl.NumberFormat('pt-BR', {
                         style: 'currency',
