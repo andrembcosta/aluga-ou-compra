@@ -41,7 +41,7 @@ function App() {
     // Validações
     const valorEntrada = (percEntrada / 100) * valorImovel
     const valorFinanciado = valorImovel - valorEntrada
-    const taxaMensal = taxaJuros / 100 / 12
+    const taxaMensal = Math.pow(1 + taxaJuros / 100, 1 / 12) - 1
     const taxaTRMensal = Math.pow(1 + taxaTR / 100, 1 / 12) - 1
     const taxaInflacaoMensal = inflacao / 100 / 12
     const taxaInvestimentoMensal = (inflacao + taxaInvestimento) / 100 / 12
@@ -393,7 +393,7 @@ function App() {
         </div>
 
         <div className="form-group">
-          <label>Taxa de Juros Nominal (a.a.) + TR</label>
+          <label>Taxa de Juros Efetiva (a.a.) + TR</label>
           <select
             value={jurosCustom ? 'custom' : taxaJuros}
             onChange={(e) => {
@@ -405,6 +405,7 @@ function App() {
               }
             }}
           >
+            <option value={8.5}>8,5% + TR (Pró-Cotista Salário BB)</option>
             <option value={9}>9% + TR (Pró-Cotista FGTS)</option>
             <option value={10.26}>10,26% + TR (SFH Correntista Caixa)</option>
             <option value={11.75}>11,75% + TR (SFH Bancos Privados)</option>
@@ -422,7 +423,7 @@ function App() {
               style={{ marginTop: '8px' }}
             />
           )}
-          <small>Taxa nominal conforme contrato. A TR é cobrada separadamente sobre o saldo devedor.</small>
+          <small>Taxa efetiva anual conforme contrato. A TR é cobrada separadamente sobre o saldo devedor.</small>
         </div>
 
         <div className="form-group">
